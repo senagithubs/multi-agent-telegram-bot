@@ -1,17 +1,4 @@
-"""
-bot.py
-------
-Ana giris noktasi. Tum katmanlari birlestirir:
-- Config: ayarlar
-- Database: kullanici + konusma gecmisi
-- Agents + Router: mesaj yonlendirme ve isleme
-- Telegram: polling veya Flask webhook modu
 
-Calistirma:
-    export TELEGRAM_BOT_TOKEN="..."
-    export OPENAI_API_KEY="..."      # opsiyonel; yoksa kural tabanli calisir
-    python bot.py
-"""
 
 import asyncio
 import logging
