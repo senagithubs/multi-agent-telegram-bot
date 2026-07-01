@@ -1,13 +1,4 @@
-"""
-agents/llm_agent.py
--------------------
-Gerçek yapay zeka ajanı. OpenAI API üzerinden yanıt üretir ve önceki
-mesajları bağlam olarak kullanır (konuşma hafızası).
 
-TASARIM: API anahtarı yoksa çökmesin diye ajan "devre dışı" moduna
-geçer ve düşük bir güven puanı döndürür; böylece bot her koşulda çalışır.
-Bu "graceful degradation" (zarif bozulma) prensibidir.
-"""
 
 import logging
 
