@@ -1,6 +1,4 @@
-"""
-agents paketi. Tum ajanlari tek yerden ice aktarir.
-"""
+
 
 from .base_agent import BaseAgent
 from .math_agent import MathAgent
