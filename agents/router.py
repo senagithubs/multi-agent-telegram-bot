@@ -1,17 +1,4 @@
-"""
-router.py
----------
-Çok-ajanlı sistemin orkestrasyon katmanı.
 
-Görevi:
-1. Tüm ajanlara "bu mesajı ele alabilir misin?" diye sorar (0-1 puan).
-2. En yüksek puanlı ajanı seçer.
-3. O ajana mesajı işletir ve cevabı döndürür.
-
-Geçmiş (history) desteği: bazı ajanlar (LLMAgent) konuşma bağlamına
-ihtiyaç duyar. Router, ajanın handle() metodunun history parametresini
-kabul edip etmediğini kontrol eder ve uygun şekilde çağırır.
-"""
 
 import inspect
 import logging
