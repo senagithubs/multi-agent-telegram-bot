@@ -1,15 +1,3 @@
-"""
-base_agent.py
--------------
-Bütün ajanların ortak atası. Her ajan bu sınıftan türer.
-
-Neden böyle bir taban sınıf var?
-- Her ajanın ortak bir arayüzü (interface) olsun diye.
-- Router, bir ajanın ne yaptığını bilmeden "can_handle" ve "handle"
-  metotlarını çağırabilsin diye.
-Bu, "polymorphism" (çok biçimlilik) denen bir tasarım prensibidir:
-Router her ajana aynı şekilde davranır, ajanlar farklı işler yapar.
-"""
 
 from abc import ABC, abstractmethod
 
