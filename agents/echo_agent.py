@@ -1,19 +1,4 @@
-"""
-echo_agent.py
--------------
-Varsayılan (fallback) ajan. Hiçbir uzman ajan mesajı ele alamazsa
-bu ajan devreye girer ve genel bir cevap verir.
 
-Neden buna ihtiyaç var?
-Router her zaman BİR ajana yönlendirmek zorunda. Eğer hiçbir ajan
-mesajı sahiplenmezse bot sessiz kalır ki bu kötü bir kullanıcı deneyimidir.
-Bu ajan can_handle içinde her zaman düşük ama sıfırdan büyük bir puan
-döndürerek "kimse istemezse ben hallederim" der.
-
-GERÇEK PROJEDE: Burası tam olarak bir LLM'in (OpenAI, Anthropic vb.)
-bağlanacağı yerdir. Şu an basit kural tabanlı cevaplar veriyoruz;
-handle() metodunu bir API çağrısıyla değiştirmek yeterli olur.
-"""
 
 from .base_agent import BaseAgent
 
