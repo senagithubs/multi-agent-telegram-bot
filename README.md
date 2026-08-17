@@ -1,125 +1,56 @@
-# Multi-Agent AI Telegram Bot
+# Multi-Agent Telegram Bot
 
-A production-oriented, multi-agent chatbot for Telegram built with Python.
-A central **router** inspects each incoming message, scores every agent's
-confidence, and dispatches to the best-matching agent. Conversations are
-persisted to a database and used as context for the LLM agent, so the bot
-has memory.
+A multi-agent Telegram chatbot where a router scores every agent's confidence in handling an incoming message and dispatches to the best match, with an LLM agent that has persistent conversation memory.
 
-Built to be extended: adding a new capability means writing one small agent
-class — no changes to the router or core.
+## What it does
 
-## Highlights
+- Routes every incoming Telegram message to the best-suited agent based on a confidence score, rather than hardcoded if/else logic.
+- Runs a specialist MathAgent that safely evaluates arithmetic with Python's ast module (never eval()), so there is no code-injection risk.
+- Runs an OpenAI-powered LLM agent for general questions, using the user's recent conversation history (persisted via SQLAlchemy) as context so replies stay coherent across turns.
+- Falls back automatically to a rule-based agent when no OPENAI_API_KEY is configured, so the bot always responds even without an LLM.
+- Serves updates either via long-polling for development or a Flask webhook with a /health endpoint for production deploys.
+- Catches and logs agent failures so a broken agent never crashes the bot; the user gets a friendly error message instead.
 
-- **Multi-agent orchestration** — a router scores agents (0.0–1.0) and
-  dispatches each message to the most suitable one.
-- **Real LLM integration** — an OpenAI-powered agent with conversation
-  memory. Falls back to rule-based agents automatically if no API key is
-  configured (graceful degradation).
-- **Persistent memory** — users and message history stored via SQLAlchemy
-  ORM (SQLite in dev, PostgreSQL in production via `DATABASE_URL`).
-- **Flask webhook support** — run via long-polling in development or via a
-  Flask webhook server in production, with a `/health` endpoint for deploys.
-- **Safe math agent** — arithmetic parsed with `ast`, never `eval()`, so
-  there is no code-injection risk.
-- **Robust error handling** — a failing agent never crashes the bot; errors
-  are logged and the user gets a friendly reply.
-- **Automated tests** — router, agents and database covered by `pytest`.
+## How confidence-based routing works
 
-## Architecture
+Every agent implements a can_handle(message) method that returns a confidence score between 0.0 and 1.0. On each incoming message, the Router (agents/router.py) asks all registered agents to score the message, then dispatches to whichever agent scored highest. The agents are registered in an order that reflects how specific they are: the math agent scores 0.95 when a message looks like a pure arithmetic expression, the LLM agent scores 0.5 whenever it is enabled - high enough to beat the fallback, low enough to lose to a specialist - and the fallback chat agent always scores a flat 0.1, so it only wins when nothing else can handle the message.
 
-```
-                 Telegram
-                    │
-        ┌───────────┴───────────┐
-        │  polling  OR  webhook │   (Flask: /webhook, /health)
-        └───────────┬───────────┘
-                    ▼
-                 bot.py  (BotService)
-                    │
-        ┌───────────┼────────────┐
-        ▼           ▼            ▼
-   Database      Router      (history as LLM context)
-   (SQLAlchemy)    │
-                   ├──► MathAgent   (safe arithmetic, ast)
-                   ├──► LLMAgent    (OpenAI + memory)
-                   └──► EchoAgent   (rule-based fallback)
-```
-
-The router asks every agent `can_handle(message) -> float` and dispatches
-to the highest scorer. Specialist agents (math) outrank the general LLM
-agent, which outranks the fallback. Adding an agent is O(1): implement the
-interface, add it to the list.
+Because routing is just a score comparison, adding a new capability means writing one more agent class with its own can_handle logic - no changes to the router or to any other agent are needed.
 
 ## Tech stack
 
-Python · python-telegram-bot · OpenAI API · SQLAlchemy · Flask · pytest
+- Python
+- python-telegram-bot
+- OpenAI API, with a rule-based fallback when no key is set
+- SQLAlchemy ORM (SQLite in development, PostgreSQL in production)
+- Flask for the production webhook and /health endpoint
+- pytest for router, agent and database tests
 
-## Project structure
+## Quickstart
 
-```
-multi_agent_bot/
-├── bot.py                 # entry point, wires everything together
-├── requirements.txt
-├── .env.example
-├── test_router.py         # automated tests (router + agents + db)
-├── core/
-│   ├── config.py          # env-based configuration
-│   ├── database.py        # SQLAlchemy models + data access
-│   └── web.py             # Flask webhook server + health check
-└── agents/
-    ├── base_agent.py      # abstract base class
-    ├── router.py          # orchestration logic
-    ├── math_agent.py      # safe arithmetic agent
-    ├── llm_agent.py       # OpenAI agent with memory
-    └── echo_agent.py      # rule-based fallback agent
+```bash
+pip install -r requirements.txt
+cp .env.example .env
+# edit .env, then export the variables (or use a tool like direnv)
+export TELEGRAM_BOT_TOKEN="..."
+export OPENAI_API_KEY="..."   # optional
+python bot.py
 ```
 
-## Setup
-
-1. Create a bot with [@BotFather](https://t.me/BotFather) and copy the token.
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Configure environment (copy the example and fill it in):
-   ```bash
-   cp .env.example .env
-   # edit .env, then export the variables (or use a tool like direnv)
-   export TELEGRAM_BOT_TOKEN="..."
-   export OPENAI_API_KEY="..."   # optional
-   ```
-4. Run:
-   ```bash
-   python bot.py
-   ```
-
-## Running tests
+Run the tests:
 
 ```bash
 pytest
 ```
 
-## Development vs production
+## Example
 
-- **Development:** leave `USE_WEBHOOK=false`. The bot long-polls Telegram.
-- **Production:** set `USE_WEBHOOK=true` and `WEBHOOK_URL` to your public
-  HTTPS URL. Telegram pushes updates to the Flask `/webhook` endpoint; the
-  `/health` endpoint lets your platform verify the service is up.
-
-## Adding a new agent
-
-```python
-from agents.base_agent import BaseAgent
-
-class WeatherAgent(BaseAgent):
-    name = "weather"
-
-    def can_handle(self, message: str) -> float:
-        return 0.9 if "weather" in message.lower() else 0.0
-
-    def handle(self, message: str) -> str:
-        return "Sunny, 24°C."   # call a weather API here
 ```
+User: 12 * (3 + 4)
+Router: -> math agent (score: 0.95)
+Bot: Sonuc: 84
 
-Register it in `bot.py`'s router list — nothing else changes.
+User: merhaba
+Router: -> chat agent (score: 0.10)
+Bot: Merhaba! Sana nasil yardimci olabilirim?
+```
